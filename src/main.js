@@ -71,20 +71,30 @@ function addLogLine(line) {
 // Check if trusttunnel_client is already running in the system
 function checkExistingProcess() {
   return new Promise((resolve) => {
-    exec('pgrep trusttunnel_client', (err, stdout) => {
+    const binaryName = path.basename(getBinaryPath());
+    exec(`pgrep -f "${binaryName}"`, (err, stdout) => {
       if (!err && stdout.trim()) {
-        vpnStatus = 'connected';
-        activeProfile = 'System Active';
-        sendStatusUpdate();
-        resolve(true);
-      } else {
-        if (vpnStatus === 'connected' && activeProfile === 'System Active') {
-          vpnStatus = 'disconnected';
-          activeProfile = null;
+        const pids = stdout
+          .trim()
+          .split('\n')
+          .map((p) => parseInt(p, 10));
+        const filteredPids = pids.filter((pid) => pid !== process.pid);
+
+        if (filteredPids.length > 0) {
+          vpnStatus = 'connected';
+          activeProfile = 'System Active';
           sendStatusUpdate();
+          resolve(true);
+          return;
         }
-        resolve(false);
       }
+
+      if (vpnStatus === 'connected' && activeProfile === 'System Active') {
+        vpnStatus = 'disconnected';
+        activeProfile = null;
+        sendStatusUpdate();
+      }
+      resolve(false);
     });
   });
 }
