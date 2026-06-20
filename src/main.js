@@ -13,13 +13,33 @@ if (started) {
 let mainWindow = null;
 let tray = null;
 let vpnProcess = null;
+let tailProcess = null;
 let vpnStatus = 'disconnected'; // 'disconnected', 'connecting', 'connected', 'error'
 let activeProfile = null;
 const vpnLogs = [];
 const maxLogLines = 1000;
 
 // Path to profiles directory
-const profileDir = path.join(app.getPath('home'), '.config', 'trusttunnel', 'profiles');
+const profileDir = path.join(app.getPath('userData'), 'profiles');
+
+function getBinaryPath() {
+  const isDev = !app.isPackaged;
+  const platform = process.platform;
+  const arch = process.arch;
+
+  let binaryName = '';
+  if (platform === 'darwin') {
+    binaryName = arch === 'arm64' ? 'trusttunnel_client-darwin-arm64' : 'trusttunnel_client-darwin-x64';
+  } else if (platform === 'linux') {
+    binaryName = 'trusttunnel_client-linux';
+  } else if (platform === 'win32') {
+    binaryName = 'trusttunnel_client-win32.exe';
+  } else {
+    binaryName = 'trusttunnel_client';
+  }
+
+  return isDev ? path.join(app.getAppPath(), 'bin', binaryName) : path.join(process.resourcesPath, 'bin', binaryName);
+}
 
 // Helper to send status to frontend
 function sendStatusUpdate() {
@@ -36,13 +56,13 @@ function sendStatusUpdate() {
 function addLogLine(line) {
   const cleanLine = line.trim();
   if (!cleanLine) return;
-  
+
   const timestampedLine = `[${new Date().toLocaleTimeString()}] ${cleanLine}`;
   vpnLogs.push(timestampedLine);
   if (vpnLogs.length > maxLogLines) {
     vpnLogs.shift();
   }
-  
+
   if (mainWindow && !mainWindow.isDestroyed()) {
     mainWindow.webContents.send('vpn-log', timestampedLine);
   }
@@ -73,11 +93,11 @@ function checkExistingProcess() {
 async function initProfiles() {
   try {
     await fs.mkdir(profileDir, { recursive: true });
-    
+
     // Check if directory is empty
     const files = await fs.readdir(profileDir);
-    const tomlFiles = files.filter(f => f.endsWith('.toml'));
-    
+    const tomlFiles = files.filter((f) => f.endsWith('.toml'));
+
     if (tomlFiles.length === 0) {
       // Try to import from system default path
       const systemDefaultPath = '/opt/trusttunnel_client/trusttunnel_client.toml';
@@ -105,24 +125,27 @@ async function initProfiles() {
             skip_verification: false,
             certificate: '',
             upstream_protocol: 'http2',
-            anti_dpi: false
+            anti_dpi: false,
           },
           dns_upstreams: [],
           listener: {
             tun: {
               bound_if: '',
               included_routes: ['0.0.0.0/0', '2000::/3'],
-              excluded_routes: ['0.0.0.0/8', '10.0.0.0/8', '169.254.0.0/16', '172.16.0.0/12', '192.168.0.0/16', '224.0.0.0/3'],
+              excluded_routes: [
+                '0.0.0.0/8',
+                '10.0.0.0/8',
+                '169.254.0.0/16',
+                '172.16.0.0/12',
+                '192.168.0.0/16',
+                '224.0.0.0/3',
+              ],
               mtu_size: 1280,
-              change_system_dns: true
-            }
-          }
+              change_system_dns: true,
+            },
+          },
         };
-        await fs.writeFile(
-          path.join(profileDir, 'default.toml'),
-          TOML.stringify(defaultTemplate),
-          'utf8'
-        );
+        await fs.writeFile(path.join(profileDir, 'default.toml'), TOML.stringify(defaultTemplate), 'utf8');
         addLogLine('Created standard default template profile.');
       }
     }
@@ -137,31 +160,31 @@ function parseTlvConfig(base64Data) {
     const buf = Buffer.from(base64Data, 'base64');
     // Minimal check: should have version/header
     if (buf.length < 5) throw new Error('Data too short');
-    
+
     // Header is 3 bytes (00 01 01)
     let idx = 3;
     const config = {
       hostname: '',
       address: '',
       username: '',
-      password: ''
+      password: '',
     };
-    
+
     while (idx < buf.length - 2) {
       const tag = buf[idx];
       const len = buf[idx + 1];
       if (idx + 2 + len > buf.length) break;
-      
+
       const val = buf.toString('utf8', idx + 2, idx + 2 + len);
-      
+
       if (tag === 1) config.hostname = val;
       else if (tag === 2) config.address = val;
       else if (tag === 5) config.username = val;
       else if (tag === 6) config.password = val;
-      
+
       idx += 2 + len;
     }
-    
+
     return config;
   } catch (err) {
     console.error('Failed to parse QR config:', err);
@@ -233,104 +256,166 @@ function setupIpc() {
 
   // 4. Start VPN
   ipcMain.handle('start-vpn', async (event, name) => {
-    if (vpnProcess) {
+    if (vpnProcess || tailProcess) {
       addLogLine('VPN is already active, stopping first...');
       await stopActiveVpn();
     }
-    
+
     const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
     const profilePath = path.join(profileDir, `${safeName}.toml`);
     if (!existsSync(profilePath)) {
       return { success: false, error: 'Profile config file not found' };
     }
-    
+
     const stopFile = '/tmp/trusttunnel.stop';
     try {
       if (existsSync(stopFile)) {
         await fs.unlink(stopFile);
       }
     } catch (e) {}
-    
+
     vpnStatus = 'connecting';
     activeProfile = name;
     sendStatusUpdate();
-    
+
     addLogLine(`Starting VPN connection using profile "${name}"...`);
-    
-    // We use pkexec to run the binary as root to allow creating the TUN interface.
-    // The binary is located at /opt/trusttunnel_client/trusttunnel_client.
-    const binPath = '/opt/trusttunnel_client/trusttunnel_client';
-    
+
+    const binPath = getBinaryPath();
+
     if (!existsSync(binPath)) {
       vpnStatus = 'error';
       sendStatusUpdate();
       addLogLine(`Error: trusttunnel_client binary not found at ${binPath}`);
-      return { success: false, error: 'Binary not found at /opt/trusttunnel_client/trusttunnel_client' };
+      return { success: false, error: `Binary not found at ${binPath}` };
     }
-    
+
+    const platform = process.platform;
+
     try {
-      const cmd = `export PATH=/usr/sbin:/sbin:/usr/bin:/bin:\$PATH && ${binPath} -c "${profilePath}" & PID=\$! ; (while kill -0 \$PID 2>/dev/null; do if [ -f "${stopFile}" ]; then kill \$PID; rm -f "${stopFile}"; exit 0; fi; sleep 0.5; done; rm -f "${stopFile}") & wait \$PID`;
-      vpnProcess = spawn('pkexec', ['sh', '-c', cmd]);
-      
-      vpnProcess.stdout.on('data', (data) => {
-        const text = data.toString();
-        addLogLine(text);
-        
-        // Simple detection of connection success
-        if (
-          text.includes('DNS listener started') || 
-          text.includes('Tunnel device initialized') || 
-          text.includes('tunnel interface is up') ||
-          text.includes('Successfully connected to endpoint') ||
-          text.includes('VPN_SS_CONNECTED')
-        ) {
-          vpnStatus = 'connected';
+      if (platform === 'darwin') {
+        const logFile = '/tmp/trusttunnel_client.log';
+        // Clear previous log file
+        try {
+          await fs.writeFile(logFile, '', 'utf8');
+        } catch (e) {}
+
+        const escapedBinPath = binPath.replace(/"/g, '\\"');
+        const escapedProfilePath = profilePath.replace(/"/g, '\\"');
+
+        const cmd = `export PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH && "${escapedBinPath}" -c "${escapedProfilePath}" > "${logFile}" 2>&1 & PID=$! ; (while kill -0 $PID 2>/dev/null; do if [ -f "${stopFile}" ]; then kill $PID; rm -f "${stopFile}"; exit 0; fi; sleep 0.5; done; rm -f "${stopFile}") & wait $PID`;
+
+        addLogLine('Requesting administrator privileges via macOS prompt...');
+        const osascriptCmd = `do shell script "${cmd.replace(/"/g, '\\"')}" with administrator privileges`;
+        vpnProcess = spawn('osascript', ['-e', osascriptCmd]);
+
+        // Start tailing the log file to get stdout/stderr in real time
+        setTimeout(() => {
+          tailProcess = spawn('tail', ['-f', '-n', '+1', logFile]);
+
+          tailProcess.stdout.on('data', (data) => {
+            const text = data.toString();
+            addLogLine(text);
+
+            if (
+              text.includes('DNS listener started') ||
+              text.includes('Tunnel device initialized') ||
+              text.includes('tunnel interface is up') ||
+              text.includes('Successfully connected to endpoint') ||
+              text.includes('VPN_SS_CONNECTED')
+            ) {
+              vpnStatus = 'connected';
+              sendStatusUpdate();
+            }
+          });
+
+          tailProcess.stderr.on('data', (data) => {
+            addLogLine(`[tail-stderr] ${data.toString()}`);
+          });
+
+          tailProcess.on('error', (err) => {
+            addLogLine(`Tail error: ${err.message}`);
+          });
+        }, 500);
+
+        vpnProcess.on('error', (err) => {
+          addLogLine(`Process error: ${err.message}`);
+          vpnStatus = 'error';
+          vpnProcess = null;
           sendStatusUpdate();
-        }
-      });
-      
-      vpnProcess.stderr.on('data', (data) => {
-        const text = data.toString();
-        addLogLine(`[stderr] ${text}`);
-        
-        // Simple detection of connection success on stderr too
-        if (
-          text.includes('DNS listener started') || 
-          text.includes('Tunnel device initialized') || 
-          text.includes('tunnel interface is up') ||
-          text.includes('Successfully connected to endpoint') ||
-          text.includes('VPN_SS_CONNECTED')
-        ) {
-          vpnStatus = 'connected';
+        });
+
+        vpnProcess.on('close', (code) => {
+          addLogLine(`VPN client wrapper exited with code ${code}`);
+          vpnProcess = null;
+          vpnStatus = 'disconnected';
+          activeProfile = null;
+          if (tailProcess) {
+            tailProcess.kill();
+            tailProcess = null;
+          }
           sendStatusUpdate();
-          return;
-        }
-        
-        // Sometime errors go to stderr
-        if (text.includes('Error') || text.includes('fatal') || text.includes('failed') || text.includes('EPERM')) {
-          // Don't change immediately to error if we already connected
-          if (vpnStatus !== 'connected') {
-            vpnStatus = 'error';
+        });
+      } else {
+        // Linux and other platforms
+        const cmd = `export PATH=/usr/sbin:/sbin:/usr/bin:/bin:$PATH && "${binPath}" -c "${profilePath}" & PID=$! ; (while kill -0 $PID 2>/dev/null; do if [ -f "${stopFile}" ]; then kill $PID; rm -f "${stopFile}"; exit 0; fi; sleep 0.5; done; rm -f "${stopFile}") & wait $PID`;
+        vpnProcess = spawn('pkexec', ['sh', '-c', cmd]);
+
+        vpnProcess.stdout.on('data', (data) => {
+          const text = data.toString();
+          addLogLine(text);
+
+          if (
+            text.includes('DNS listener started') ||
+            text.includes('Tunnel device initialized') ||
+            text.includes('tunnel interface is up') ||
+            text.includes('Successfully connected to endpoint') ||
+            text.includes('VPN_SS_CONNECTED')
+          ) {
+            vpnStatus = 'connected';
             sendStatusUpdate();
           }
-        }
-      });
-      
-      vpnProcess.on('error', (err) => {
-        addLogLine(`Process error: ${err.message}`);
-        vpnStatus = 'error';
-        vpnProcess = null;
-        sendStatusUpdate();
-      });
-      
-      vpnProcess.on('close', (code) => {
-        addLogLine(`VPN client process exited with code ${code}`);
-        vpnProcess = null;
-        vpnStatus = 'disconnected';
-        activeProfile = null;
-        sendStatusUpdate();
-      });
-      
+        });
+
+        vpnProcess.stderr.on('data', (data) => {
+          const text = data.toString();
+          addLogLine(`[stderr] ${text}`);
+
+          if (
+            text.includes('DNS listener started') ||
+            text.includes('Tunnel device initialized') ||
+            text.includes('tunnel interface is up') ||
+            text.includes('Successfully connected to endpoint') ||
+            text.includes('VPN_SS_CONNECTED')
+          ) {
+            vpnStatus = 'connected';
+            sendStatusUpdate();
+            return;
+          }
+
+          if (text.includes('Error') || text.includes('fatal') || text.includes('failed') || text.includes('EPERM')) {
+            if (vpnStatus !== 'connected') {
+              vpnStatus = 'error';
+              sendStatusUpdate();
+            }
+          }
+        });
+
+        vpnProcess.on('error', (err) => {
+          addLogLine(`Process error: ${err.message}`);
+          vpnStatus = 'error';
+          vpnProcess = null;
+          sendStatusUpdate();
+        });
+
+        vpnProcess.on('close', (code) => {
+          addLogLine(`VPN client process exited with code ${code}`);
+          vpnProcess = null;
+          vpnStatus = 'disconnected';
+          activeProfile = null;
+          sendStatusUpdate();
+        });
+      }
+
       return { success: true };
     } catch (err) {
       vpnStatus = 'error';
@@ -353,7 +438,7 @@ function setupIpc() {
     return {
       status: vpnStatus,
       activeProfile,
-      logs: vpnLogs
+      logs: vpnLogs,
     };
   });
 
@@ -366,12 +451,12 @@ function setupIpc() {
       } else {
         base64Data = url.trim();
       }
-      
+
       const config = parseTlvConfig(base64Data);
       if (!config || !config.hostname) {
         return { success: false, error: 'Invalid URL or QR code configuration format' };
       }
-      
+
       // Create new profile object
       const newProfile = {
         loglevel: 'info',
@@ -391,29 +476,32 @@ function setupIpc() {
           skip_verification: false,
           certificate: '',
           upstream_protocol: 'http2',
-          anti_dpi: false
+          anti_dpi: false,
         },
         dns_upstreams: [],
         listener: {
           tun: {
             bound_if: '',
             included_routes: ['0.0.0.0/0', '2000::/3'],
-            excluded_routes: ['0.0.0.0/8', '10.0.0.0/8', '169.254.0.0/16', '172.16.0.0/12', '192.168.0.0/16', '224.0.0.0/3'],
+            excluded_routes: [
+              '0.0.0.0/8',
+              '10.0.0.0/8',
+              '169.254.0.0/16',
+              '172.16.0.0/12',
+              '192.168.0.0/16',
+              '224.0.0.0/3',
+            ],
             mtu_size: 1280,
-            change_system_dns: true
-          }
-        }
+            change_system_dns: true,
+          },
+        },
       };
-      
+
       const sanitizedHostname = config.hostname.replace(/[^a-zA-Z0-9_-]/g, '_');
       const profileName = `imported_${sanitizedHostname}`;
       const fileName = `${profileName}.toml`;
-      await fs.writeFile(
-        path.join(profileDir, fileName),
-        TOML.stringify(newProfile),
-        'utf8'
-      );
-      
+      await fs.writeFile(path.join(profileDir, fileName), TOML.stringify(newProfile), 'utf8');
+
       addLogLine(`Successfully imported configuration for "${config.hostname}".`);
       return { success: true, profileName };
     } catch (err) {
@@ -424,44 +512,52 @@ function setupIpc() {
 }
 
 // Stop VPN helper
-function stopActiveVpn() {
-  return new Promise(async (resolve) => {
-    addLogLine('Stopping active VPN connection...');
-    
-    const stopFile = '/tmp/trusttunnel.stop';
+const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+
+async function stopActiveVpn() {
+  addLogLine('Stopping active VPN connection...');
+
+  const stopFile = '/tmp/trusttunnel.stop';
+  try {
+    await fs.writeFile(stopFile, 'stop', 'utf8');
+  } catch (err) {
+    addLogLine(`Failed to write stop file: ${err.message}`);
+  }
+
+  if (tailProcess) {
     try {
-      await fs.writeFile(stopFile, 'stop', 'utf8');
-    } catch (err) {
-      addLogLine(`Failed to write stop file: ${err.message}`);
+      tailProcess.kill();
+    } catch (e) {}
+    tailProcess = null;
+  }
+
+  if (vpnProcess) {
+    // Send SIGTERM to wrapper as a backup (ignoring EPERM)
+    try {
+      vpnProcess.kill('SIGTERM');
+    } catch (e) {
+      // ignore EPERM
     }
-    
-    if (vpnProcess) {
-      // Send SIGTERM to pkexec wrapper as a backup (ignoring EPERM)
-      try {
-        vpnProcess.kill('SIGTERM');
-      } catch (e) {
-        // ignore EPERM
-      }
-      
-      // Wait a moment for normal termination
-      setTimeout(() => {
-        vpnProcess = null;
-        vpnStatus = 'disconnected';
-        activeProfile = null;
-        sendStatusUpdate();
-        addLogLine('VPN stopped.');
-        resolve({ success: true });
-      }, 1000);
-    } else {
-      resolve({ success: true });
-    }
-  });
+
+    // Wait a moment for normal termination
+    await sleep(1000);
+    vpnProcess = null;
+    vpnStatus = 'disconnected';
+    activeProfile = null;
+    sendStatusUpdate();
+    addLogLine('VPN stopped.');
+  } else {
+    vpnStatus = 'disconnected';
+    activeProfile = null;
+    sendStatusUpdate();
+  }
+  return { success: true };
 }
 
 // Setup System Tray
 function setupTray() {
   const iconPath = path.join(app.getAppPath(), 'src', 'tray_icon.png');
-  
+
   let finalIconPath = null;
   if (existsSync(iconPath)) {
     finalIconPath = iconPath;
@@ -471,7 +567,7 @@ function setupTray() {
       '/usr/share/icons/Adwaita/scalable/devices/network-vpn-symbolic.svg',
       '/usr/share/icons/hicolor/48x48/apps/network-vpn.png',
       '/usr/share/pixmaps/network-vpn.png',
-      '/usr/share/pixmaps/gnome-netstatus-tx.png'
+      '/usr/share/pixmaps/gnome-netstatus-tx.png',
     ];
     for (const f of fallbacks) {
       if (existsSync(f)) {
@@ -480,17 +576,17 @@ function setupTray() {
       }
     }
   }
-  
+
   if (!finalIconPath) {
     console.log('No tray icon found, skipping system tray setup.');
     return;
   }
-  
+
   // Create a minimal tray menu
   tray = new Tray(finalIconPath);
   tray.setToolTip('TrustTunnel VPN');
   updateTrayMenu();
-  
+
   tray.on('click', () => {
     if (mainWindow) {
       if (mainWindow.isVisible()) {
@@ -504,7 +600,7 @@ function setupTray() {
 
 function updateTrayMenu() {
   if (!tray) return;
-  
+
   const statusText = `Status: ${vpnStatus.toUpperCase()}${activeProfile ? ` (${activeProfile})` : ''}`;
   const contextMenu = Menu.buildFromTemplate([
     { label: 'TrustTunnel VPN Client', enabled: false },
@@ -519,14 +615,14 @@ function updateTrayMenu() {
           // Try connecting to default profile
           ipcMain.emit('start-vpn', null, 'default');
         }
-      }
+      },
     },
     { type: 'separator' },
     {
       label: 'Open Client Window',
       click: () => {
         if (mainWindow) mainWindow.show();
-      }
+      },
     },
     {
       label: 'Quit',
@@ -534,10 +630,10 @@ function updateTrayMenu() {
         await stopActiveVpn();
         app.isQuitting = true;
         app.quit();
-      }
-    }
+      },
+    },
   ]);
-  
+
   tray.setContextMenu(contextMenu);
 }
 
@@ -597,13 +693,13 @@ app.whenReady().then(async () => {
   await initProfiles();
   setupIpc();
   createWindow();
-  
+
   try {
     setupTray();
   } catch (e) {
     console.error('Failed to create system tray:', e);
   }
-  
+
   // Periodically check if process crashed or finished externally
   setInterval(checkExistingProcess, 5000);
 
@@ -634,6 +730,11 @@ const cleanUpAndExit = () => {
   try {
     writeFileSync('/tmp/trusttunnel.stop', 'stop');
   } catch (e) {}
+  if (tailProcess) {
+    try {
+      tailProcess.kill();
+    } catch (e) {}
+  }
   process.exit(0);
 };
 

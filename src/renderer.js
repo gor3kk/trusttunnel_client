@@ -67,7 +67,7 @@ const newProfileNameInput = document.getElementById('new-profile-name-input');
 /* ----------------------------------------------------
  * 1. TAB NAVIGATION SYSTEM
  * ---------------------------------------------------- */
-navItems.forEach(item => {
+navItems.forEach((item) => {
   item.addEventListener('click', () => {
     const targetTab = item.getAttribute('data-tab');
     switchTab(targetTab);
@@ -75,7 +75,7 @@ navItems.forEach(item => {
 });
 
 // Link from Dashboard cards to logs or other pages
-document.querySelectorAll('[data-tab-link]').forEach(link => {
+document.querySelectorAll('[data-tab-link]').forEach((link) => {
   link.addEventListener('click', (e) => {
     const targetTab = e.target.getAttribute('data-tab-link');
     switchTab(targetTab);
@@ -83,10 +83,10 @@ document.querySelectorAll('[data-tab-link]').forEach(link => {
 });
 
 function switchTab(tabId) {
-  navItems.forEach(btn => {
+  navItems.forEach((btn) => {
     btn.classList.toggle('active', btn.getAttribute('data-tab') === tabId);
   });
-  tabPanes.forEach(pane => {
+  tabPanes.forEach((pane) => {
     pane.classList.toggle('active', pane.getAttribute('id') === `tab-${tabId}`);
   });
 }
@@ -98,22 +98,23 @@ async function loadProfiles(autoSelectName = null) {
   profiles = await window.api.getProfiles();
   const listContainer = document.getElementById('profiles-list-display');
   listContainer.innerHTML = '';
-  
+
   const keys = Object.keys(profiles);
-  
+
   if (keys.length === 0) {
-    listContainer.innerHTML = '<p class="text-secondary" style="padding: 16px;">Профилей не обнаружено. Создайте новый.</p>';
+    listContainer.innerHTML =
+      '<p class="text-secondary" style="padding: 16px;">Профилей не обнаружено. Создайте новый.</p>';
     return;
   }
-  
-  keys.forEach(name => {
+
+  keys.forEach((name) => {
     const conf = profiles[name];
     const endpoint = conf.endpoint || {};
     const addresses = endpoint.addresses || [];
-    
+
     const card = document.createElement('div');
     card.className = `profile-card ${selectedProfileName === name ? 'active' : ''}`;
-    
+
     // Build Card inner HTML safely
     card.innerHTML = `
       <div class="profile-info">
@@ -130,7 +131,7 @@ async function loadProfiles(autoSelectName = null) {
         </button>
       </div>
     `;
-    
+
     // Select Action
     card.querySelector('.btn-select').addEventListener('click', (e) => {
       e.stopPropagation();
@@ -139,7 +140,7 @@ async function loadProfiles(autoSelectName = null) {
     card.addEventListener('click', () => {
       selectProfile(name);
     });
-    
+
     // Delete Action
     card.querySelector('.btn-delete').addEventListener('click', async (e) => {
       e.stopPropagation();
@@ -153,10 +154,10 @@ async function loadProfiles(autoSelectName = null) {
         }
       }
     });
-    
+
     listContainer.appendChild(card);
   });
-  
+
   // Set default selected if none active
   if (!selectedProfileName && keys.length > 0) {
     selectProfile(autoSelectName || keys[0]);
@@ -170,20 +171,20 @@ function selectProfile(name) {
   selectedProfileName = name;
   const config = profiles[name];
   if (!config) return;
-  
+
   // Update selected class on UI cards
-  document.querySelectorAll('.profile-card').forEach(card => {
+  document.querySelectorAll('.profile-card').forEach((card) => {
     const title = card.querySelector('.profile-title').textContent;
     card.classList.toggle('active', title === name);
   });
-  
+
   // Update dashboard information
   infoProfile.textContent = name;
   infoServer.textContent = config.endpoint?.addresses?.join(', ') || config.endpoint?.hostname || '--';
   infoProtocol.textContent = (config.endpoint?.upstream_protocol || 'http2').toUpperCase();
   infoUser.textContent = config.endpoint?.username || '--';
   infoMode.textContent = config.vpn_mode === 'selective' ? 'Selective (Выборочный)' : 'General (Обходной)';
-  
+
   // Fill values in config editor form
   endpointHostname.value = config.endpoint?.hostname || '';
   endpointAddresses.value = config.endpoint?.addresses?.join(', ') || '';
@@ -193,17 +194,17 @@ function selectProfile(name) {
   endpointSni.value = config.endpoint?.custom_sni || '';
   endpointAntiDpi.checked = !!config.endpoint?.anti_dpi;
   endpointSkipVerification.checked = !!config.endpoint?.skip_verification;
-  
+
   configLovel.value = config.loglevel || 'info';
   configKillswitch.checked = !!config.killswitch_enabled;
   configPostquantum.checked = !!config.post_quantum_group_enabled;
-  
+
   // TUN Listener Editor values
   const tun = config.listener?.tun || {};
   tunMtu.value = tun.mtu_size || 1280;
   tunIfname.value = tun.bound_if || '';
   tunChangeDns.checked = tun.change_system_dns !== false;
-  
+
   // Update exclusions UI
   renderExclusionsList();
 }
@@ -217,31 +218,34 @@ document.getElementById('save-config-btn').addEventListener('click', async () =>
     alert('Сначала выберите или создайте профиль.');
     return;
   }
-  
+
   const config = profiles[selectedProfileName];
   if (!config) return;
-  
+
   // Construct updated object
   config.loglevel = configLovel.value;
   config.killswitch_enabled = configKillswitch.checked;
   config.post_quantum_group_enabled = configPostquantum.checked;
-  
+
   config.endpoint = config.endpoint || {};
   config.endpoint.hostname = endpointHostname.value.trim();
-  config.endpoint.addresses = endpointAddresses.value.split(',').map(s => s.trim()).filter(s => s.length > 0);
+  config.endpoint.addresses = endpointAddresses.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0);
   config.endpoint.username = endpointUsername.value.trim();
   config.endpoint.password = endpointPassword.value;
   config.endpoint.upstream_protocol = endpointProtocol.value;
   config.endpoint.custom_sni = endpointSni.value.trim();
   config.endpoint.anti_dpi = endpointAntiDpi.checked;
   config.endpoint.skip_verification = endpointSkipVerification.checked;
-  
+
   config.listener = config.listener || {};
   config.listener.tun = config.listener.tun || {};
   config.listener.tun.mtu_size = parseInt(tunMtu.value, 10) || 1280;
   config.listener.tun.bound_if = tunIfname.value.trim();
   config.listener.tun.change_system_dns = tunChangeDns.checked;
-  
+
   const res = await window.api.saveProfile(selectedProfileName, config);
   if (res.success) {
     alert(`Конфигурация профиля "${selectedProfileName}" успешно сохранена!`);
@@ -259,27 +263,28 @@ function renderExclusionsList() {
     exclusionsCount.textContent = '0';
     return;
   }
-  
+
   config.exclusions = config.exclusions || [];
   const mode = config.vpn_mode || 'general';
-  
+
   // Setup General / Selective Toggles active state
   modeGeneralBtn.classList.toggle('active', mode === 'general');
   modeSelectiveBtn.classList.toggle('active', mode === 'selective');
-  
+
   if (mode === 'general') {
-    routingDescription.textContent = 'Режим General: Весь трафик идет через VPN, за исключением указанных в списке сайтов.';
+    routingDescription.textContent =
+      'Режим General: Весь трафик идет через VPN, за исключением указанных в списке сайтов.';
   } else {
     routingDescription.textContent = 'Режим Selective: Трафик идет через VPN ТОЛЬКО для сайтов, указанных в списке.';
   }
-  
+
   // Render domains table
   const filter = searchExclusionsInput.value.toLowerCase().trim();
-  const list = config.exclusions.filter(item => item.toLowerCase().includes(filter));
-  
+  const list = config.exclusions.filter((item) => item.toLowerCase().includes(filter));
+
   exclusionsCount.textContent = config.exclusions.length;
   exclusionsTableBody.innerHTML = '';
-  
+
   if (list.length === 0) {
     exclusionsTableBody.innerHTML = `
       <tr>
@@ -290,8 +295,8 @@ function renderExclusionsList() {
     `;
     return;
   }
-  
-  list.forEach(domain => {
+
+  list.forEach((domain) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><code>${domain}</code></td>
@@ -299,12 +304,12 @@ function renderExclusionsList() {
         <button class="btn btn-sm btn-secondary btn-delete-ex" style="color: var(--accent-red)">Удалить</button>
       </td>
     `;
-    
+
     tr.querySelector('.btn-delete-ex').addEventListener('click', async () => {
-      config.exclusions = config.exclusions.filter(ex => ex !== domain);
+      config.exclusions = config.exclusions.filter((ex) => ex !== domain);
       await saveExclusionsQuietly();
     });
-    
+
     exclusionsTableBody.appendChild(tr);
   });
 }
@@ -344,7 +349,7 @@ addExclusionForm.addEventListener('submit', async (e) => {
   const val = exclusionInput.value.trim();
   const config = profiles[selectedProfileName];
   if (!val || !config) return;
-  
+
   config.exclusions = config.exclusions || [];
   if (!config.exclusions.includes(val)) {
     config.exclusions.push(val);
@@ -383,12 +388,12 @@ confirmProfileBtn.addEventListener('click', async () => {
     alert('Пожалуйста, введите корректное имя.');
     return;
   }
-  
+
   if (profiles[name]) {
     alert('Профиль с таким именем уже существует.');
     return;
   }
-  
+
   // Template Profile structure
   const blankTemplate = {
     loglevel: 'info',
@@ -408,20 +413,27 @@ confirmProfileBtn.addEventListener('click', async () => {
       skip_verification: false,
       certificate: '',
       upstream_protocol: 'http2',
-      anti_dpi: false
+      anti_dpi: false,
     },
     dns_upstreams: [],
     listener: {
       tun: {
         bound_if: '',
         included_routes: ['0.0.0.0/0', '2000::/3'],
-        excluded_routes: ['0.0.0.0/8', '10.0.0.0/8', '169.254.0.0/16', '172.16.0.0/12', '192.168.0.0/16', '224.0.0.0/3'],
+        excluded_routes: [
+          '0.0.0.0/8',
+          '10.0.0.0/8',
+          '169.254.0.0/16',
+          '172.16.0.0/12',
+          '192.168.0.0/16',
+          '224.0.0.0/3',
+        ],
         mtu_size: 1280,
-        change_system_dns: true
-      }
-    }
+        change_system_dns: true,
+      },
+    },
   };
-  
+
   const res = await window.api.saveProfile(name, blankTemplate);
   if (res.success) {
     newProfileModal.classList.remove('active');
@@ -440,7 +452,7 @@ document.getElementById('import-btn').addEventListener('click', async () => {
     alert('Пожалуйста, введите URL-ссылку или base64-строку.');
     return;
   }
-  
+
   const res = await window.api.importProfileFromUrl(url);
   if (res.success) {
     document.getElementById('import-url-input').value = '';
@@ -475,21 +487,21 @@ connectBtn.addEventListener('click', async () => {
 function updateVpnStateUI(statusData) {
   vpnStatus = statusData.status;
   activeProfileName = statusData.activeProfile;
-  
+
   // Re-enable connect button
   connectBtn.disabled = false;
-  
+
   // Reset classes
   connectBtn.className = 'connect-button';
   sidebarStatusDot.className = 'status-dot';
-  
+
   // Apply classes based on status
   connectBtn.classList.add(vpnStatus);
   sidebarStatusDot.classList.add(vpnStatus);
-  
+
   let label = 'Отключено';
   let bannerLabel = 'Готов к подключению';
-  
+
   if (vpnStatus === 'disconnected') {
     label = 'Отключено';
     bannerLabel = 'Готов к подключению';
@@ -510,7 +522,7 @@ function updateVpnStateUI(statusData) {
     stopUptimeTimer();
     stopPingTester();
   }
-  
+
   sidebarStatusLabel.textContent = label;
   vpnStateText.textContent = bannerLabel;
   sidebarActiveProfile.textContent = activeProfileName ? `Профиль: ${activeProfileName}` : 'Нет активного профиля';
@@ -520,12 +532,18 @@ function updateVpnStateUI(statusData) {
 function startUptimeTimer() {
   if (uptimeTimer) clearInterval(uptimeTimer);
   connectTime = Date.now();
-  
+
   uptimeTimer = setInterval(() => {
     const diff = Date.now() - connectTime;
-    const hrs = Math.floor(diff / 3600000).toString().padStart(2, '0');
-    const mins = Math.floor((diff % 3600000) / 60000).toString().padStart(2, '0');
-    const secs = Math.floor((diff % 60000) / 1000).toString().padStart(2, '0');
+    const hrs = Math.floor(diff / 3600000)
+      .toString()
+      .padStart(2, '0');
+    const mins = Math.floor((diff % 3600000) / 60000)
+      .toString()
+      .padStart(2, '0');
+    const secs = Math.floor((diff % 60000) / 1000)
+      .toString()
+      .padStart(2, '0');
     uptimeDisplay.textContent = `${hrs}:${mins}:${secs}`;
   }, 1000);
 }
@@ -541,14 +559,14 @@ function stopUptimeTimer() {
 /* Ping Test Mock/Logic */
 function startPingTester() {
   if (pingTimer) clearInterval(pingTimer);
-  
+
   const testPing = () => {
     // Since we are connected to VPN, pinging a fast external server is a good way to show connection speed
     // We will do a mock ping to represent network latency through the tunnel
     const latency = Math.floor(Math.random() * 20) + 15; // 15-35 ms typical
     pingVal.textContent = `${latency} ms`;
   };
-  
+
   testPing();
   pingTimer = setInterval(testPing, 4000);
 }
@@ -567,28 +585,38 @@ function appendLogLine(line) {
   const row = document.createElement('div');
   row.className = 'log-line';
   const lowerLine = line.toLowerCase();
-  if (lowerLine.includes('error') || lowerLine.includes('fatal') || lowerLine.includes('fail') || lowerLine.includes('crit')) {
+  if (
+    lowerLine.includes('error') ||
+    lowerLine.includes('fatal') ||
+    lowerLine.includes('fail') ||
+    lowerLine.includes('crit')
+  ) {
     row.classList.add('error');
-  } else if (lowerLine.includes('info') || lowerLine.includes('success') || lowerLine.includes('system') || lowerLine.includes('default')) {
+  } else if (
+    lowerLine.includes('info') ||
+    lowerLine.includes('success') ||
+    lowerLine.includes('system') ||
+    lowerLine.includes('default')
+  ) {
     row.classList.add('system');
   }
   row.textContent = line;
-  
+
   logsDisplay.appendChild(row);
-  
+
   // Limit memory rows in console
   while (logsDisplay.childNodes.length > 500) {
     logsDisplay.removeChild(logsDisplay.firstChild);
   }
-  
+
   // Dashboard mini logs
   const miniRow = row.cloneNode(true);
   miniLogsDisplay.appendChild(miniRow);
-  
+
   while (miniLogsDisplay.childNodes.length > 30) {
     miniLogsDisplay.removeChild(miniLogsDisplay.firstChild);
   }
-  
+
   if (autoscrollCheckbox.checked) {
     logsDisplay.scrollTop = logsDisplay.scrollHeight;
   }
@@ -603,7 +631,7 @@ document.getElementById('clear-logs-btn').addEventListener('click', () => {
 
 document.getElementById('copy-logs-btn').addEventListener('click', () => {
   const text = Array.from(logsDisplay.querySelectorAll('.log-line'))
-    .map(el => el.textContent)
+    .map((el) => el.textContent)
     .join('\n');
   navigator.clipboard.writeText(text);
   alert('Логи успешно скопированы в буфер обмена!');
@@ -624,12 +652,12 @@ async function init() {
   // Get initial state
   const state = await window.api.getVpnStatus();
   updateVpnStateUI(state);
-  
+
   // Seed current logs if any exist in status
   if (state.logs && state.logs.length > 0) {
-    state.logs.forEach(line => appendLogLine(line));
+    state.logs.forEach((line) => appendLogLine(line));
   }
-  
+
   // Load profiles
   await loadProfiles();
 }

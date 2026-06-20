@@ -4,9 +4,12 @@
     <meta charset="UTF-8" />
     <title>TrustTunnel Desktop Client</title>
     <!-- Google Fonts -->
-    <link rel="preconnect" href="https://fonts.googleapis.com">
-    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500&family=Outfit:wght@300;400;500;600;700&display=swap"
+      rel="stylesheet"
+    />
   </head>
   <body>
     <div class="app-container">
@@ -15,13 +18,13 @@
         <div class="logo-area">
           <div class="logo-icon">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
-              <path d="M12 8v4M12 16h.01" stroke-linecap="round"/>
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+              <path d="M12 8v4M12 16h.01" stroke-linecap="round" />
             </svg>
           </div>
           <span class="logo-text">TrustTunnel</span>
         </div>
-        
+
         <nav class="nav-menu">
           <button class="nav-item active" data-tab="dashboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -32,41 +35,41 @@
             </svg>
             <span>Панель управления</span>
           </button>
-          
+
           <button class="nav-item" data-tab="profiles">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/>
-              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>
+              <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
+              <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
             </svg>
             <span>Профили VPN</span>
           </button>
-          
+
           <button class="nav-item" data-tab="exclusions">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/>
+              <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" />
             </svg>
             <span>Исключения</span>
           </button>
-          
+
           <button class="nav-item" data-tab="editor">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"/>
+              <path d="M12 20h9M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" />
             </svg>
             <span>Редактор конфига</span>
           </button>
-          
+
           <button class="nav-item" data-tab="logs">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <polyline points="14 2 14 8 20 8"/>
-              <line x1="16" y1="13" x2="8" y2="13"/>
-              <line x1="16" y1="17" x2="8" y2="17"/>
-              <polyline points="10 9 9 9 8 9"/>
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z" />
+              <polyline points="14 2 14 8 20 8" />
+              <line x1="16" y1="13" x2="8" y2="13" />
+              <line x1="16" y1="17" x2="8" y2="17" />
+              <polyline points="10 9 9 9 8 9" />
             </svg>
             <span>Журналы</span>
           </button>
         </nav>
-        
+
         <div class="sidebar-status-widget">
           <div class="mini-status">
             <span class="status-dot disconnected"></span>
@@ -75,7 +78,7 @@
           <div class="active-profile-name">Нет активного профиля</div>
         </div>
       </aside>
-      
+
       <!-- Main Content Area -->
       <main class="main-content">
         <!-- Dashboard Tab -->
@@ -89,7 +92,7 @@
               </div>
             </div>
           </div>
-          
+
           <div class="dashboard-grid">
             <div class="dashboard-card connection-card">
               <div class="connection-status-container">
@@ -105,7 +108,7 @@
                 <div class="connection-uptime" id="uptime-display">00:00:00</div>
               </div>
             </div>
-            
+
             <div class="dashboard-card info-card">
               <h3>Информация о подключении</h3>
               <div class="info-list">
@@ -131,25 +134,27 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="dashboard-card logs-card">
               <div class="card-header">
                 <h3>Журнал событий</h3>
                 <button class="btn btn-sm btn-link" data-tab-link="logs">Подробнее</button>
               </div>
               <div class="mini-logs" id="mini-logs-display">
-                <div class="log-line system">Приложение запущено. Выберите профиль и нажмите кнопку питания для подключения.</div>
+                <div class="log-line system">
+                  Приложение запущено. Выберите профиль и нажмите кнопку питания для подключения.
+                </div>
               </div>
             </div>
           </div>
         </section>
-        
+
         <!-- Profiles Tab -->
         <section id="tab-profiles" class="tab-pane">
           <div class="pane-header">
             <h1>Профили TrustTunnel</h1>
           </div>
-          
+
           <div class="profiles-container">
             <!-- Left: Profiles List -->
             <div class="profiles-list-section">
@@ -161,33 +166,44 @@
                 <!-- Injected via renderer.js -->
               </div>
             </div>
-            
+
             <!-- Right: Import Options & Quick Actions -->
             <div class="profiles-actions-section">
               <div class="card bg-glass">
                 <h3>Импорт профиля</h3>
-                <p class="text-secondary">Импортируйте профиль, вставив ссылку из QR-кода TrustTunnel (начинающуюся с <code>https://trusttunnel.org/qr.html#tt=</code>) или сам код конфигурации.</p>
+                <p class="text-secondary">
+                  Импортируйте профиль, вставив ссылку из QR-кода TrustTunnel (начинающуюся с
+                  <code>https://trusttunnel.org/qr.html#tt=</code>) или сам код конфигурации.
+                </p>
                 <div class="form-group">
-                  <input type="text" id="import-url-input" placeholder="Вставьте ссылку или base64-код здесь..." class="form-control">
+                  <input
+                    type="text"
+                    id="import-url-input"
+                    placeholder="Вставьте ссылку или base64-код здесь..."
+                    class="form-control"
+                  />
                 </div>
                 <button class="btn btn-primary btn-block" id="import-btn">Импортировать</button>
               </div>
-              
+
               <div class="card bg-glass mt-4">
                 <h3>Управление профилями</h3>
-                <p class="text-secondary">Все профили хранятся локально в файлах формата TOML. Вы можете напрямую редактировать их в текстовом редактове в папке:</p>
+                <p class="text-secondary">
+                  Все профили хранятся локально в файлах формата TOML. Вы можете напрямую редактировать их в текстовом
+                  редактове в папке:
+                </p>
                 <code class="path-display" id="config-path-text">~/.config/trusttunnel/profiles/</code>
               </div>
             </div>
           </div>
         </section>
-        
+
         <!-- Exclusions Tab -->
         <section id="tab-exclusions" class="tab-pane">
           <div class="pane-header">
             <h1>Управление исключениями</h1>
           </div>
-          
+
           <div class="exclusions-container">
             <!-- Exclusions Controls Banner -->
             <div class="exclusions-banner">
@@ -202,31 +218,45 @@
                 <button class="btn-toggle" id="mode-selective-btn">Selective (Выборочный)</button>
               </div>
             </div>
-            
+
             <!-- Exclusions Editor Content -->
             <div class="exclusions-grid">
               <!-- Add new item -->
               <div class="card bg-glass add-exclusion-card">
                 <h3>Добавить домен или IP-адрес</h3>
-                <p class="text-secondary">Поддерживаются домены (например, <code>youtube.com</code>), маски поддоменов (<code>*.google.com</code>) и IP/CIDR подсети (<code>192.168.1.0/24</code>).</p>
+                <p class="text-secondary">
+                  Поддерживаются домены (например, <code>youtube.com</code>), маски поддоменов
+                  (<code>*.google.com</code>) и IP/CIDR подсети (<code>192.168.1.0/24</code>).
+                </p>
                 <form id="add-exclusion-form" class="form-row">
-                  <input type="text" id="exclusion-input" placeholder="example.com или 1.1.1.1..." class="form-control" required>
+                  <input
+                    type="text"
+                    id="exclusion-input"
+                    placeholder="example.com или 1.1.1.1..."
+                    class="form-control"
+                    required
+                  />
                   <button type="submit" class="btn btn-primary">Добавить</button>
                 </form>
               </div>
-              
+
               <!-- Exclusions list -->
               <div class="card bg-glass list-exclusion-card">
                 <div class="list-header">
                   <h3>Список исключений (<span id="exclusions-count">0</span>)</h3>
-                  <input type="text" id="search-exclusions" placeholder="Поиск в списке..." class="form-control sm-search">
+                  <input
+                    type="text"
+                    id="search-exclusions"
+                    placeholder="Поиск в списке..."
+                    class="form-control sm-search"
+                  />
                 </div>
                 <div class="exclusions-list-scroll">
                   <table class="exclusions-table">
                     <thead>
                       <tr>
                         <th>Домен / IP / CIDR</th>
-                        <th style="width: 80px; text-align: right;">Действие</th>
+                        <th style="width: 80px; text-align: right">Действие</th>
                       </tr>
                     </thead>
                     <tbody id="exclusions-table-body">
@@ -238,7 +268,7 @@
             </div>
           </div>
         </section>
-        
+
         <!-- Editor Tab -->
         <section id="tab-editor" class="tab-pane">
           <div class="pane-header">
@@ -247,7 +277,7 @@
               <button class="btn btn-primary" id="save-config-btn">Сохранить изменения</button>
             </div>
           </div>
-          
+
           <div class="editor-scroll-container">
             <div class="config-editor-form">
               <!-- Endpoint Settings Section -->
@@ -256,23 +286,28 @@
                 <div class="form-grid">
                   <div class="form-group col-12">
                     <label for="endpoint-hostname">Имя хоста (Hostname для TLS)</label>
-                    <input type="text" id="endpoint-hostname" class="form-control">
+                    <input type="text" id="endpoint-hostname" class="form-control" />
                   </div>
-                  
+
                   <div class="form-group col-12">
                     <label for="endpoint-addresses">Адреса подключения (IP:Порт или Хост:Порт через запятую)</label>
-                    <input type="text" id="endpoint-addresses" class="form-control" placeholder="example.com:443, 192.168.1.1:443">
+                    <input
+                      type="text"
+                      id="endpoint-addresses"
+                      class="form-control"
+                      placeholder="example.com:443, 192.168.1.1:443"
+                    />
                   </div>
-                  
+
                   <div class="form-group col-6">
                     <label for="endpoint-username">Имя пользователя (Username)</label>
-                    <input type="text" id="endpoint-username" class="form-control">
+                    <input type="text" id="endpoint-username" class="form-control" />
                   </div>
                   <div class="form-group col-6">
                     <label for="endpoint-password">Пароль (Password)</label>
-                    <input type="password" id="endpoint-password" class="form-control">
+                    <input type="password" id="endpoint-password" class="form-control" />
                   </div>
-                  
+
                   <div class="form-group col-6">
                     <label for="endpoint-protocol">Протокол</label>
                     <select id="endpoint-protocol" class="form-control">
@@ -282,25 +317,25 @@
                   </div>
                   <div class="form-group col-6">
                     <label for="endpoint-sni">Кастомный SNI (по желанию)</label>
-                    <input type="text" id="endpoint-sni" class="form-control" placeholder="Например, speedtest.net">
+                    <input type="text" id="endpoint-sni" class="form-control" placeholder="Например, speedtest.net" />
                   </div>
-                  
+
                   <div class="form-group col-12 checkbox-group">
                     <label class="checkbox-container">
-                      <input type="checkbox" id="endpoint-anti-dpi">
+                      <input type="checkbox" id="endpoint-anti-dpi" />
                       <span class="checkmark"></span>
                       Анти-DPI (Меры обхода замедлений/блокировок)
                     </label>
-                    
+
                     <label class="checkbox-container">
-                      <input type="checkbox" id="endpoint-skip-verification">
+                      <input type="checkbox" id="endpoint-skip-verification" />
                       <span class="checkmark"></span>
                       Пропускать верификацию TLS сертификата (Skip Verification)
                     </label>
                   </div>
                 </div>
               </div>
-              
+
               <!-- General Settings Section -->
               <div class="editor-section">
                 <h3>Общие параметры туннеля</h3>
@@ -313,40 +348,40 @@
                       <option value="trace">Trace</option>
                     </select>
                   </div>
-                  
+
                   <div class="form-group col-6 checkbox-group">
                     <label class="checkbox-container">
-                      <input type="checkbox" id="config-killswitch">
+                      <input type="checkbox" id="config-killswitch" />
                       <span class="checkmark"></span>
                       Kill Switch (Блокировать трафик при обрыве VPN)
                     </label>
-                    
+
                     <label class="checkbox-container">
-                      <input type="checkbox" id="config-postquantum">
+                      <input type="checkbox" id="config-postquantum" />
                       <span class="checkmark"></span>
                       Пост-квантовое шифрование (Post-Quantum key exchange)
                     </label>
                   </div>
                 </div>
               </div>
-              
+
               <!-- TUN Interface Settings -->
               <div class="editor-section">
                 <h3>Сетевой интерфейс TUN</h3>
                 <div class="form-grid">
                   <div class="form-group col-6">
                     <label for="tun-mtu">Размер MTU (MTU Size)</label>
-                    <input type="number" id="tun-mtu" class="form-control" value="1280">
+                    <input type="number" id="tun-mtu" class="form-control" value="1280" />
                   </div>
-                  
+
                   <div class="form-group col-6">
                     <label for="tun-ifname">Имя интерфейса (оставьте пустым для автоопределения)</label>
-                    <input type="text" id="tun-ifname" class="form-control" placeholder="tun0">
+                    <input type="text" id="tun-ifname" class="form-control" placeholder="tun0" />
                   </div>
-                  
+
                   <div class="form-group col-12 checkbox-group">
                     <label class="checkbox-container">
-                      <input type="checkbox" id="tun-change-dns">
+                      <input type="checkbox" id="tun-change-dns" />
                       <span class="checkmark"></span>
                       Автоматически изменять системные DNS серверы
                     </label>
@@ -356,14 +391,14 @@
             </div>
           </div>
         </section>
-        
+
         <!-- Logs Tab -->
         <section id="tab-logs" class="tab-pane">
           <div class="pane-header">
             <h1>Журналы TrustTunnel</h1>
             <div class="header-actions">
               <label class="checkbox-container font-sm mr-4">
-                <input type="checkbox" id="logs-autoscroll" checked>
+                <input type="checkbox" id="logs-autoscroll" checked />
                 <span class="checkmark"></span>
                 Автопрокрутка
               </label>
@@ -371,7 +406,7 @@
               <button class="btn btn-secondary btn-sm" id="clear-logs-btn">Очистить</button>
             </div>
           </div>
-          
+
           <div class="logs-console-wrapper">
             <div class="logs-console" id="logs-display">
               <!-- Logs stream injected here -->
@@ -380,14 +415,14 @@
         </section>
       </main>
     </div>
-    
+
     <!-- Modal for new profile -->
     <div id="new-profile-modal" class="modal-overlay">
       <div class="modal-card">
         <h3>Новый профиль VPN</h3>
         <p class="text-secondary">Укажите уникальное имя для нового профиля:</p>
         <div class="form-group">
-          <input type="text" id="new-profile-name-input" placeholder="Например: my_server_usa" class="form-control">
+          <input type="text" id="new-profile-name-input" placeholder="Например: my_server_usa" class="form-control" />
         </div>
         <div class="modal-actions">
           <button class="btn btn-secondary" id="cancel-profile-btn">Отмена</button>

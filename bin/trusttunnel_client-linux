@@ -1,0 +1,12 @@
+#!/bin/bash
+echo "[info] Starting Mock TrustTunnel Client on Linux..."
+echo "[info] DNS listener started on 127.0.0.1:53"
+echo "[info] Tunnel device initialized (tun0)"
+echo "[info] tunnel interface is up"
+echo "[info] Successfully connected to endpoint"
+echo "VPN_SS_CONNECTED"
+
+# Keep running until killed
+while true; do
+  sleep 1
+done

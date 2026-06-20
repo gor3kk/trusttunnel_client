@@ -17,5 +17,5 @@ contextBridge.exposeInMainWorld('api', {
     const subscription = (event, log) => callback(log);
     ipcRenderer.on('vpn-log', subscription);
     return () => ipcRenderer.removeListener('vpn-log', subscription);
-  }
+  },
 });

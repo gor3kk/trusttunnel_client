@@ -90,3 +90,6 @@ typings/
 
 # Electron-Forge
 out/
+
+# CodeGraph
+.codegraph/
