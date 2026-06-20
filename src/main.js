@@ -212,7 +212,8 @@ function setupIpc() {
   // 3. Delete profile
   ipcMain.handle('delete-profile', async (event, name) => {
     try {
-      const filePath = path.join(profileDir, `${name}.toml`);
+      const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const filePath = path.join(profileDir, `${safeName}.toml`);
       if (existsSync(filePath)) {
         await fs.unlink(filePath);
         addLogLine(`Profile "${name}" deleted.`);
@@ -237,7 +238,8 @@ function setupIpc() {
       await stopActiveVpn();
     }
     
-    const profilePath = path.join(profileDir, `${name}.toml`);
+    const safeName = name.replace(/[^a-zA-Z0-9_-]/g, '_');
+    const profilePath = path.join(profileDir, `${safeName}.toml`);
     if (!existsSync(profilePath)) {
       return { success: false, error: 'Profile config file not found' };
     }
@@ -403,7 +405,8 @@ function setupIpc() {
         }
       };
       
-      const profileName = `imported_${config.hostname.replace(/\./g, '_')}`;
+      const sanitizedHostname = config.hostname.replace(/[^a-zA-Z0-9_-]/g, '_');
+      const profileName = `imported_${sanitizedHostname}`;
       const fileName = `${profileName}.toml`;
       await fs.writeFile(
         path.join(profileDir, fileName),
@@ -578,7 +581,14 @@ const createWindow = () => {
 
   // Handle external links safely
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
-    shell.openExternal(url);
+    try {
+      const parsedUrl = new URL(url);
+      if (['http:', 'https:'].includes(parsedUrl.protocol)) {
+        shell.openExternal(url);
+      }
+    } catch (e) {
+      console.error('Invalid URL opening attempt:', url);
+    }
     return { action: 'deny' };
   });
 };

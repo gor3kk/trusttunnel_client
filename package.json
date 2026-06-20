@@ -15,7 +15,7 @@
   "keywords": [],
   "author": {
     "name": "konstantin.korotkov",
-    "email": "korotkov@yandex.ru"
+    "email": "konstantin.korotkov@raftds.com"
   },
   "license": "MIT",
   "devDependencies": {
